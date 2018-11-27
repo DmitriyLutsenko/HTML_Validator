@@ -44,7 +44,7 @@
         for($i = 0; $i < count($tags); $i++){
             
             $tags[$i] = strtolower($tags[$i]);
-            echo $tags[$i]." ";
+            //echo $tags[$i]." ";
             
             for($j = $i+1; $j < count($tags); $j++){
                 
@@ -64,6 +64,7 @@
 
     function checkCouples($array_str) {
         
+		echo "Ваши теги: ".htmlspecialchars($array_str).'<br>';
         preg_match_all('#<(?!meta|img|br|hr|input\b)\b([a-z]+)(?: .*)?(?<![/|/ ])>#iU', $array_str, $result);
         $opentags = count($result[1]);
         
@@ -145,8 +146,10 @@
     
     //1 тест: код валидный
     $array = array('<div>',
-                        '<a>','<div>','</div>',
-                        '</a>',
+                        '<hr>',
+						'<div>',
+						'<img>',
+                        '</div>',
                     '</div>');
     getResult($array);
     
@@ -185,7 +188,7 @@
     getResult($array);
 	
 	//8 тест: структурно правильно, Валиден с точки зрения структуры 
-    $array = array('<a>','<div>','<a>','</a>','</div>','</a>');
+    $array = array('<a>','<div>','<a>','<hr>','</a>','</div>','</a>');
     getResult($array);
 	
     
