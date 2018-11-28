@@ -20,7 +20,28 @@
         
         Это формальность, но проверить необходимо на самом начальном уровне. несовпадение размерностей укажет на отсутствие пары для тега.
         И затем просто сравнил их содержимое.
-        Если массивы одинаковы, код валиден
+        Если массивы одинаковы, код валиден.
+		
+		!!Что добавилось в функционал:
+		Есть случаи, при которых старая версия скрипта покажет неверный false:
+	    Если массив пуст либо состоит из одинарных тегов.
+		Значит, надо учесть, что при открывающих тегах = 0, закрывающих тегах = 0 и количестве одинарных тегов >= 0
+		код будет валиден.
+		
+		Проблема данного кода: 
+		
+		1)Я не следую принципам ООП (Лучше обернуть в классы работу со строками и массивами)
+		2)Я следую принципу WET.(DRY рулит, оберну повторяющиеся блоки кода в функцию/функции)
+		3)Слишком большая цепочка if (Не очень очевидно, что каждая проверка делает.)
+		4)Нужно все же разделить вывод информации и логику.
+		
+		
+		Вывод:
+		Рефакторинг кода.
+		1) Может, пересмотреть формат подачи промежуточных данных
+	    (Использовать массив из числа открывающих, закрывающих и одиночных тегов. это будет проще в плане логики, на мой взгляд)
+		2) Don't repeat yourself. 
+		3) ООП.
                 
     */
   
@@ -37,7 +58,7 @@
         $html = implode($array);
         $arrayIndexes = array();
         preg_match_all (
-        '(<((?!(col|isindex|track|param|hr|br|command|img|bgsound|area|base|basefont|input|link|meta)\b)(.+?))>)', $html, $result);
+        '(<((?!col|isindex|track|param|hr|br|command|img|bgsound|area|base|basefont|input|link|meta\b)(.+?))>)', $html, $result);
         
         $tags = $result[1];
         
@@ -64,17 +85,12 @@
 
     function checkCouples($array_str) {
         
-		echo "Ваши теги: ".htmlspecialchars($array_str).'<br>';
-        preg_match_all('#<(?!meta|img|br|hr|input\b)\b([a-z]+)(?: .*)?(?<![/|/ ])>#iU', $array_str, $result);
+        preg_match_all('#<(?!col|isindex|track|param|hr|br|command|img|bgsound|area|base|basefont|input|link|meta\b)\b([a-z]+)(?: .*)?(?<![/|/ ])>#iU', $array_str, $result);
         $opentags = count($result[1]);
         
         preg_match_all('#</+(.+)>#iU', $array_str, $result);
         $closedtags = count($result[1]);
-        
-        //debug
-        echo "closed tags count ".$closedtags.'<br>';
-        echo "opened tags count ".$opentags;
-        
+		
         if($closedtags != $opentags){
             
             return false;
@@ -84,23 +100,53 @@
     }
 
     function getResult($array){
-        echo "<br>";
+		echo '<br><br>';
+		$html = implode($array);
+		echo "Ваши теги: ".htmlspecialchars($html);
         $indexLen = validate_html($array);
         $html = implode($array);
     
-        if (checkCouples($html) == true) {
-            $valide = false;
+	
+		preg_match_all('#<(col|isindex|track|param|hr|br|command|img|bgsound|area|base|basefont|input|link|meta)>#iU', $html, $result);
+        $simpletags = count($result[1]);
+		echo "Одинарных : ".$simpletags.' при количестве элементов '.count($array)."<br>";
+		preg_match_all('#<(?!col|isindex|track|param|hr|br|command|img|bgsound|area|base|basefont|input|link|meta\b)\b([a-z]+)(?: .*)?(?<![/|/ ])>#iU',$html, $result);
+        $opentags = count($result[1]);
+		
+		
+		if(checkCouples($html) == true && $opentags == 0 ) {
+		
+			//;
+			if($simpletags < count($array)) {
+					echo "Возможно, ошибка в тегах, код не валиден<br>";
+					return false;	
+			}
+			if($simpletags != count($array)) {
+				
+				echo "Возможно, ошибка в тегах, код не валиден<br>";
+		        return false;				
+			}
+			if ($simpletags == count($array) || ($simpletags == count($array) && count($array) == 0)){
+				
+				//echo " -- ". $simpletags." -- ".count($array);
+				echo "Открывающих и закрывающих тегов нет, одинарных тегов: ".$simpletags.'<br>';
+				echo 'html создастся<br>';
+				return true;
+			}
+			
+		}
+			
+		
+	
+        else if (checkCouples($html) == true) {
+            
+			$valide = false;
         
-        
-            echo "<br>";
             $arrayIndexes = array();
-            preg_match_all('#<(?!meta|img|br|hr|input\b)\b([a-z]+)(?: .*)?(?<![/|/ ])>#iU', $html, $result);
+            preg_match_all('#<(?!(col|isindex|track|param|hr|br|command|img|bgsound|area|base|basefont|input|link|meta)\b)\b([a-z]+)(?: .*)?(?<![/|/ ])>#iU', $html, $result);
         
             $tags = $result[1];
-            
-            //debug
-            //var_dump($tags);
-            
+			
             if(count($tags)==count ($indexLen) && !empty(count ($indexLen))) {
         
                 $correct = 0;
@@ -138,13 +184,13 @@
         }
         else {
             
-            echo "<br>Код html не валиден<br>";
+            echo "Код html не валиден<br>";
             return false;
             
         }
     }
     
-    //1 тест: код валидный
+     //1 тест: код валидный
     $array = array('<div>',
                         '<hr>',
 						'<div>',
@@ -191,6 +237,15 @@
     $array = array('<a>','<div>','<a>','<hr>','</a>','</div>','</a>');
     getResult($array);
 	
+	//9 тест: массив пуст, Пустая страница, выдаст валид
+	$array = array();
+    getResult($array);
     
+	//10 тест: массив содержит незакрытый одиночный тег, должен быть не валид.
+	$array = array('<br', 'br>');
+    getResult($array); 
     
+	//11 тест: валид
+	$array = array('<hr>','<hr>','<hr>','<br>','<hr>','<hr>');
+    getResult($array);
 ?>
